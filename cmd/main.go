@@ -29,8 +29,9 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Route("/notes/{noteID}", func(r chi.Router) {
-			r.Get("/", notesHandler.GetNote)
+		r.Route("/notes", func(r chi.Router) {
+			r.Get("/", notesHandler.GetAllNotes)
+			r.Get("/{noteID}", notesHandler.GetNote)
 			r.Post("/", notesHandler.CreateNote)
 		})
 	})

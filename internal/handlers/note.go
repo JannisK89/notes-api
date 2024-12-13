@@ -28,6 +28,11 @@ func (h NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	note, err := h.repo.GetNoteByID(noteIDAsInt)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Note not found"))
+		return
+	}
 
 	jsonNote, err := json.Marshal(note)
 	if err != nil {
@@ -51,4 +56,22 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("Note created"))
+}
+
+func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
+	notes, err := h.repo.GetAllNotes()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
+		return
+	}
+
+	jsonNotes, err := json.Marshal(notes)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	w.Write(jsonNotes)
 }
