@@ -75,3 +75,52 @@ func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(jsonNotes)
 }
+
+func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
+	noteID := chi.URLParam(r, "noteID")
+	noteIDAsInt, err := strconv.Atoi(noteID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("noteID must be an integer"))
+		return
+	}
+
+	note := &models.Note{}
+	defer r.Body.Close()
+	err = json.NewDecoder(r.Body).Decode(note)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid Request"))
+		return
+	}
+
+	err = h.repo.UpdateNoteByID(noteIDAsInt, note)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Note updated"))
+}
+
+func (h NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
+	noteID := chi.URLParam(r, "noteID")
+	noteIDAsInt, err := strconv.Atoi(noteID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("noteID must be an integer"))
+		return
+	}
+
+	err = h.repo.DeleteNoteByID(noteIDAsInt)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+
+}

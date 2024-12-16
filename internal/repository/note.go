@@ -50,3 +50,19 @@ func (r *noteRepository) GetAllNotes() ([]*models.Note, error) {
 	}
 	return notes, nil
 }
+
+func (r *noteRepository) UpdateNoteByID(id int, note *models.Note) error {
+	_, err := r.db.Exec("UPDATE notes SET title = ?, content = ? WHERE id = ?", note.Title, note.Content, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *noteRepository) DeleteNoteByID(id int) error {
+	_, err := r.db.Exec("DELETE FROM notes WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
