@@ -1,0 +1,6 @@
+notes.db
+README.md
+**/tmp
+**.git
+.gitignore
+.air.toml
