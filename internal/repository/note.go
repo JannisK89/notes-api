@@ -14,12 +14,16 @@ func NewNotesRepository(db *sql.DB) *noteRepository {
 	return &noteRepository{db}
 }
 
-func (r *noteRepository) CreateNote(note *models.Note) error {
-	_, err := r.db.Exec("INSERT INTO notes (title, content) VALUES (?, ?)", note.Title, note.Content)
+func (r *noteRepository) CreateNote(note *models.Note) (int, error) {
+	res, err := r.db.Exec("INSERT INTO notes (title, content) VALUES (?, ?)", note.Title, note.Content)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return int(id), nil
 }
 
 func (r *noteRepository) GetNoteByID(id int) (*models.Note, error) {

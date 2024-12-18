@@ -52,12 +52,12 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.repo.CreateNote(note)
+	id, err := h.repo.CreateNote(note)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Note created"))
+	w.Write([]byte("{\"id\":" + strconv.Itoa(id) + "}"))
 }
 
 func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
