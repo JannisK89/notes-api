@@ -7,6 +7,7 @@ import (
 	"github.com/JannisK89/notes-api/internal/db"
 	"github.com/JannisK89/notes-api/internal/handlers"
 	"github.com/JannisK89/notes-api/internal/repository"
+	"github.com/JannisK89/notes-api/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -19,7 +20,8 @@ func main() {
 	}
 
 	notesRepo := repository.NewNotesRepository(dbconn)
-	notesHandler := handlers.NewNoteHandler(notesRepo)
+	notesService := service.NewNoteService(notesRepo)
+	notesHandler := handlers.NewNoteHandler(notesService)
 
 	r := chi.NewRouter()
 
@@ -38,5 +40,9 @@ func main() {
 		})
 	})
 
-	http.ListenAndServe(":3000", r)
+	error := http.ListenAndServe(":3000", r)
+	if error != nil {
+		log.Fatal("Could not start server: ", error)
+	}
+
 }
