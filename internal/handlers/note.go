@@ -101,12 +101,14 @@ func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
+		log.Println(err)
 		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Status: statusError, Message: "Invalid Data"})
 		return
 	}
 
 	err = h.noteService.UpdateNote(noteIDAsInt, note)
 	if err != nil {
+		log.Println(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
 		return
 	}
