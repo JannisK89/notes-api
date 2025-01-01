@@ -2,10 +2,13 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/JannisK89/notes-api/internal/models"
 )
+
+var ErrNoteNotFound = errors.New("Note not found")
 
 type RepoError struct {
 	Src string
@@ -15,10 +18,6 @@ type RepoError struct {
 
 func (e *RepoError) Error() string {
 	return fmt.Sprintf("NoteRepo Error in %s with id %d: %v", e.Src, e.ID, e.Err)
-}
-
-func (e *RepoError) Unwrap() error {
-	return e.Err
 }
 
 type noteRepository struct {
@@ -35,7 +34,7 @@ func (r *noteRepository) GetNoteByID(id int) (*models.Note, error) {
 	err := row.Scan(&note.ID, &note.Title, &note.Content)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &RepoError{"GetNoteByID", id, fmt.Errorf("Note not found", id)}
+			return nil, &RepoError{"GetNoteByID", id, ErrNoteNotFound}
 		}
 		return nil, &RepoError{"GetNoteByID", id, err}
 	}
@@ -54,9 +53,6 @@ func (r *noteRepository) GetAllNotes() ([]*models.Note, error) {
 		note := &models.Note{}
 		err := rows.Scan(&note.ID, &note.Title, &note.Content)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				return nil, &RepoError{"GetAllNotes", 0, fmt.Errorf("No notes found")}
-			}
 			return nil, &RepoError{"GetAllNotes", 0, err}
 		}
 		notes = append(notes, note)

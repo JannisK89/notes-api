@@ -2,44 +2,60 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/JannisK89/notes-api/internal/models"
 	"github.com/JannisK89/notes-api/internal/repository"
+	"github.com/JannisK89/notes-api/internal/service"
+	"github.com/JannisK89/notes-api/internal/utils"
 	"github.com/go-chi/chi/v5"
 )
 
-type NoteHandler struct {
-	repo repository.NoteRepository
+var (
+	statusSuccess = "success"
+	statusError   = "error"
+)
+
+func getNoteId(r *http.Request) (int, error) {
+	noteId := chi.URLParam(r, "noteID")
+	noteIdAsInt, err := strconv.Atoi(noteId)
+	if err != nil {
+		return 0, fmt.Errorf("noteId must be a valid integer: %v", noteId)
+	}
+	return noteIdAsInt, nil
 }
 
-func NewNoteHandler(repo repository.NoteRepository) *NoteHandler {
-	return &NoteHandler{repo}
+type NoteHandler struct {
+	noteService service.NoteService
+}
+
+func NewNoteHandler(noteService service.NoteService) *NoteHandler {
+	return &NoteHandler{noteService}
 }
 
 func (h NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
-	noteID := chi.URLParam(r, "noteID")
-	noteIDAsInt, err := strconv.Atoi(noteID)
+	noteId, err := getNoteId(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("noteID must be an integer"))
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: err.Error(), Status: statusError})
 		return
 	}
 
-	note, err := h.repo.GetNoteByID(noteIDAsInt)
+	note, err := h.noteService.GetNote(noteId)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("Note not found"))
-		return
+		log.Println(err)
+		if repoError, ok := err.(*repository.RepoError); ok && repoError.Err == repository.ErrNoteNotFound {
+			utils.JSONResponse(w, http.StatusNotFound, utils.ApiResponse{Message: repoError.Err.Error(), Status: statusError})
+			return
+		} else {
+			utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+			return
+		}
 	}
-
-	jsonNote, err := json.Marshal(note)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	w.Write(jsonNote)
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: statusSuccess, Data: note})
 }
 
 func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
@@ -47,41 +63,37 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid Request"))
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: "Invalid Request", Status: statusError})
 		return
 	}
 
-	id, err := h.repo.CreateNote(note)
+	id, err := h.noteService.CreateNote(note)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("{\"id\":" + strconv.Itoa(id) + "}"))
+	utils.JSONResponse(w, http.StatusCreated, utils.ApiResponse{Status: statusSuccess, Data: id})
 }
 
 func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
-	notes, err := h.repo.GetAllNotes()
+	notes, err := h.noteService.GetAllNotes()
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
 		return
 	}
 
-	jsonNotes, err := json.Marshal(notes)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	w.Write(jsonNotes)
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: statusSuccess, Data: notes})
 }
 
 func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	noteID := chi.URLParam(r, "noteID")
 	noteIDAsInt, err := strconv.Atoi(noteID)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("noteID must be an integer"))
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: err.Error(), Status: statusError})
 		return
 	}
 
@@ -89,38 +101,35 @@ func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	err = json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid Request"))
+		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Status: statusError, Message: "Invalid Data"})
 		return
 	}
 
-	err = h.repo.UpdateNoteByID(noteIDAsInt, note)
+	err = h.noteService.UpdateNote(noteIDAsInt, note)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Note updated"))
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Message: "Note Updated", Status: statusSuccess})
 }
 
 func (h NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
 	noteID := chi.URLParam(r, "noteID")
 	noteIDAsInt, err := strconv.Atoi(noteID)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("noteID must be an integer"))
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: err.Error(), Status: statusError})
 		return
 	}
 
-	err = h.repo.DeleteNoteByID(noteIDAsInt)
+	err = h.noteService.DeleteNote(noteIDAsInt)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
+		log.Println(err)
+		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	utils.JSONResponse(w, http.StatusNoContent, utils.ApiResponse{Status: statusSuccess})
 
 }

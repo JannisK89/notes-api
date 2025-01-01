@@ -10,16 +10,21 @@ import (
 
 	"github.com/JannisK89/notes-api/internal/mocks"
 	"github.com/JannisK89/notes-api/internal/models"
+	"github.com/JannisK89/notes-api/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: Fix Service Mock
+// TODO: Add failure tests
 func TestNoteHandler_GetNote_Success(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
-	noteHandler := NewNoteHandler(noteRepoMock)
+	noteService := service.NewNoteService(noteRepoMock)
+	noteHandler := NewNoteHandler(noteService)
 
 	note := &models.Note{ID: 1, Title: "Test Note", Content: "I Am A Test Note"}
+
 	noteRepoMock.On("GetNoteByID", 1).Return(note, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/notes/", nil)
@@ -34,14 +39,15 @@ func TestNoteHandler_GetNote_Success(t *testing.T) {
 
 	// Assertion
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.JSONEq(t, `{"id":1,"title":"Test Note","content":"I Am A Test Note"}`, rec.Body.String())
+	assert.JSONEq(t, `{"status": "success", "data": {"id":1,"title":"Test Note","content":"I Am A Test Note"} }`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
 
 func TestNoteHandler_CreateNote_Success(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
-	noteHandler := NewNoteHandler(noteRepoMock)
+	noteService := service.NewNoteService(noteRepoMock)
+	noteHandler := NewNoteHandler(noteService)
 
 	note := &models.Note{Title: "Test Note", Content: "I Am A Test Note"}
 	noteRepoMock.On("CreateNote", note).Return(1, nil)
@@ -59,14 +65,15 @@ func TestNoteHandler_CreateNote_Success(t *testing.T) {
 
 	// Assertion
 	assert.Equal(t, http.StatusCreated, rec.Code)
-	assert.JSONEq(t, `{"id":1}`, rec.Body.String())
+	assert.JSONEq(t, `{"status": "success", "data": 1}`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
 
 func TestNoteHandler_UpdateNote_Success(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
-	noteHandler := NewNoteHandler(noteRepoMock)
+	noteService := service.NewNoteService(noteRepoMock)
+	noteHandler := NewNoteHandler(noteService)
 
 	note := &models.Note{ID: 1, Title: "Test Note", Content: "I Am A Test Note"}
 	noteRepoMock.On("UpdateNoteByID", 1, note).Return(nil)
@@ -88,14 +95,15 @@ func TestNoteHandler_UpdateNote_Success(t *testing.T) {
 
 	// Assertion
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Equal(t, "Note updated", rec.Body.String())
+	assert.JSONEq(t, `{"status": "success", "message": "Note Updated"}`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
 
 func TestNoteHandler_DeleteNote_Success(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
-	noteHandler := NewNoteHandler(noteRepoMock)
+	noteService := service.NewNoteService(noteRepoMock)
+	noteHandler := NewNoteHandler(noteService)
 
 	noteRepoMock.On("DeleteNoteByID", 1).Return(nil)
 
@@ -111,5 +119,6 @@ func TestNoteHandler_DeleteNote_Success(t *testing.T) {
 
 	// Assertion
 	assert.Equal(t, http.StatusNoContent, rec.Code)
+	assert.JSONEq(t, `{"status": "success"}`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
