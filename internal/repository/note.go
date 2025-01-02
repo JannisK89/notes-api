@@ -17,7 +17,7 @@ type RepoError struct {
 }
 
 func (e *RepoError) Error() string {
-	return fmt.Sprintf("NoteRepo Error in %s with id %d: %v", e.Src, e.ID, e.Err)
+	return fmt.Sprintf("NoteRepo error in %s with id %d: %v", e.Src, e.ID, e.Err)
 }
 
 type noteRepository struct {

@@ -50,6 +50,10 @@ func (h NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 		if repoError, ok := err.(*repository.RepoError); ok && repoError.Err == repository.ErrNoteNotFound {
 			utils.JSONResponse(w, http.StatusNotFound, utils.ApiResponse{Message: repoError.Err.Error(), Status: statusError})
 			return
+		} else if serviceError, ok := err.(*service.ServiceError); ok {
+			utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: serviceError.Err.Error(), Status: statusError})
+			return
+
 		} else {
 			utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
 			return
@@ -71,8 +75,12 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 	id, err := h.noteService.CreateNote(note)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
-		return
+		if serviceError, ok := err.(*service.ServiceError); ok {
+			utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: serviceError.Err.Error(), Status: statusError})
+			return
+		} else {
+			utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+		}
 	}
 	utils.JSONResponse(w, http.StatusCreated, utils.ApiResponse{Status: statusSuccess, Data: id})
 }
