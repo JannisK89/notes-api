@@ -80,6 +80,7 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+			return
 		}
 	}
 	utils.JSONResponse(w, http.StatusCreated, utils.ApiResponse{Status: statusSuccess, Data: id})
