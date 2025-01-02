@@ -23,3 +23,7 @@ func JSONResponse(w http.ResponseWriter, status int, data interface{}) {
 		}
 	}
 }
+
+func ErrorResponse(w http.ResponseWriter, status int, message string) {
+	JSONResponse(w, status, ApiResponse{Message: message, Status: "error"})
+}

@@ -53,6 +53,10 @@ func (s *noteService) UpdateNote(id int, note *models.Note) error {
 	if id < 1 {
 		return &ServiceError{"GetNote", id, ErrInvalidID}
 	}
+
+	if note == nil || note.Title == "" || note.Content == "" {
+		return &ServiceError{"CreateNote", 0, ErrInvalidNote}
+	}
 	return s.repo.UpdateNoteByID(id, note)
 }
 

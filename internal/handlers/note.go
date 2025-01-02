@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -19,11 +19,13 @@ var (
 	statusError   = "error"
 )
 
+var ErrInvalidID = errors.New("ID must be a valid integer")
+
 func getNoteId(r *http.Request) (int, error) {
 	noteId := chi.URLParam(r, "noteID")
 	noteIdAsInt, err := strconv.Atoi(noteId)
 	if err != nil {
-		return 0, fmt.Errorf("noteId must be a valid integer: %v", noteId)
+		return 0, ErrInvalidID
 	}
 	return noteIdAsInt, nil
 }
@@ -40,7 +42,7 @@ func (h NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 	noteId, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: err.Error(), Status: statusError})
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -48,14 +50,14 @@ func (h NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		if repoError, ok := err.(*repository.RepoError); ok && repoError.Err == repository.ErrNoteNotFound {
-			utils.JSONResponse(w, http.StatusNotFound, utils.ApiResponse{Message: repoError.Err.Error(), Status: statusError})
+			utils.ErrorResponse(w, http.StatusNotFound, repoError.Err.Error())
 			return
 		} else if serviceError, ok := err.(*service.ServiceError); ok {
-			utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: serviceError.Err.Error(), Status: statusError})
+			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
 			return
 
 		} else {
-			utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 	}
@@ -68,7 +70,7 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: "Invalid Request", Status: statusError})
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Request")
 		return
 	}
 
@@ -76,10 +78,10 @@ func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		if serviceError, ok := err.(*service.ServiceError); ok {
-			utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: serviceError.Err.Error(), Status: statusError})
+			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
 			return
 		} else {
-			utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 	}
@@ -90,7 +92,7 @@ func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
 	notes, err := h.noteService.GetAllNotes()
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
+		utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
 
@@ -98,11 +100,10 @@ func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
-	noteID := chi.URLParam(r, "noteID")
-	noteIDAsInt, err := strconv.Atoi(noteID)
+	noteId, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: err.Error(), Status: statusError})
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -111,36 +112,44 @@ func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Status: statusError, Message: "Invalid Data"})
+		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Data")
 		return
 	}
 
-	err = h.noteService.UpdateNote(noteIDAsInt, note)
+	err = h.noteService.UpdateNote(noteId, note)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
-		return
+		if serviceError, ok := err.(*service.ServiceError); ok {
+			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
+			return
+		} else {
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
 	}
 
 	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Message: "Note Updated", Status: statusSuccess})
 }
 
 func (h NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
-	noteID := chi.URLParam(r, "noteID")
-	noteIDAsInt, err := strconv.Atoi(noteID)
+	noteId, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusBadRequest, utils.ApiResponse{Message: err.Error(), Status: statusError})
+		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	err = h.noteService.DeleteNote(noteIDAsInt)
+	err = h.noteService.DeleteNote(noteId)
 	if err != nil {
 		log.Println(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, utils.ApiResponse{Message: "Internal Server Error", Status: statusError})
-		return
+		if serviceError, ok := err.(*service.ServiceError); ok {
+			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
+			return
+		} else {
+			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+			return
+		}
 	}
-
 	utils.JSONResponse(w, http.StatusNoContent, utils.ApiResponse{Status: statusSuccess})
 
 }
