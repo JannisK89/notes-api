@@ -20,8 +20,8 @@ var ErrInvalidId = errors.New("id must be a valid integer")
 
 // getNoteid extracts the noteid from the URL and returns it as an integer
 // It returns an error if the noteid is not a valid integer
-func getNoteid(r *http.Request) (int, error) {
-	noteid := chi.URLParam(r, "noteid")
+func getNoteId(r *http.Request) (int, error) {
+	noteid := chi.URLParam(r, "noteId")
 	noteidAsInt, err := strconv.Atoi(noteid)
 	if err != nil {
 		return 0, fmt.Errorf("%w: %v", ErrInvalidId, noteid)
@@ -44,7 +44,7 @@ func NewNoteHandler(noteService service.NoteService) *NoteHandler {
 // It returns a 404 error if the note is not found and a 400 error
 // if the provided id is not a valid integer.
 func (h NoteHandler) Get(w http.ResponseWriter, r *http.Request) {
-	noteid, err := getNoteid(r)
+	noteid, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
 		utils.ErrorResponse(w, http.StatusBadRequest, ErrInvalidId.Error())
@@ -110,7 +110,7 @@ func (h NoteHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 // Update modifies an existing note in the database.
 // It returns a 400 error if the note data is invalid or if the id is not found.
 func (h NoteHandler) Update(w http.ResponseWriter, r *http.Request) {
-	noteid, err := getNoteid(r)
+	noteid, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
@@ -147,7 +147,7 @@ func (h NoteHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete removes a note from the database.
 // It returns a 400 error if the id is not found.
 func (h NoteHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	noteid, err := getNoteid(r)
+	noteid, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
 		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
