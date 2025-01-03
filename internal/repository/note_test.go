@@ -32,18 +32,18 @@ func TestNoteRepository_CreateNote(t *testing.T) {
 	mock.ExpectExec("INSERT INTO notes").WithArgs(secondNote.Title, secondNote.Content).WillReturnResult(sqlmock.NewResult(2, 1))
 
 	// Act
-	firstID, firstErr := repo.Create(firstNote)
-	secondID, secondErr := repo.Create(secondNote)
+	firstId, firstErr := repo.Create(firstNote)
+	secondId, secondErr := repo.Create(secondNote)
 
 	// Assert
 	assert.NoError(t, firstErr)
 	assert.NoError(t, secondErr)
-	assert.Equal(t, 1, firstID)
-	assert.Equal(t, 2, secondID)
+	assert.Equal(t, 1, firstId)
+	assert.Equal(t, 2, secondId)
 
 }
 
-func TestNoteRepository_GetNoteByID(t *testing.T) {
+func TestNoteRepository_GetNoteById(t *testing.T) {
 	// Arrange
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -52,12 +52,12 @@ func TestNoteRepository_GetNoteByID(t *testing.T) {
 	defer db.Close()
 	notes := [2]*models.Note{
 		&models.Note{
-			ID:      1,
+			Id:      1,
 			Title:   "First Note",
 			Content: "This is the first note",
 		},
 		&models.Note{
-			ID:      2,
+			Id:      2,
 			Title:   "Second Note",
 			Content: "This is the second note",
 		}}
@@ -66,15 +66,15 @@ func TestNoteRepository_GetNoteByID(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{"id", "title", "content"})
 	for _, note := range notes {
-		rows.AddRow(note.ID, note.Title, note.Content)
+		rows.AddRow(note.Id, note.Title, note.Content)
 	}
 
-	mock.ExpectQuery("SELECT id, title, content FROM notes WHERE id = ?").WithArgs(notes[0].ID).WillReturnRows(rows)
-	mock.ExpectQuery("SELECT id, title, content FROM notes WHERE id = ?").WithArgs(notes[1].ID).WillReturnRows(rows)
+	mock.ExpectQuery("SELECT id, title, content FROM notes WHERE id = ?").WithArgs(notes[0].Id).WillReturnRows(rows)
+	mock.ExpectQuery("SELECT id, title, content FROM notes WHERE id = ?").WithArgs(notes[1].Id).WillReturnRows(rows)
 
 	// Act
-	firstResult, firstErr := repo.Get(notes[0].ID)
-	secondResult, secondErr := repo.Get(notes[1].ID)
+	firstResult, firstErr := repo.Get(notes[0].Id)
+	secondResult, secondErr := repo.Get(notes[1].Id)
 
 	// Assert
 	assert.NoError(t, firstErr)
@@ -93,17 +93,17 @@ func TestNoteRepository_GetAllNotes(t *testing.T) {
 	defer db.Close()
 	notes := [3]*models.Note{
 		&models.Note{
-			ID:      1,
+			Id:      1,
 			Title:   "First Note",
 			Content: "This is the first note",
 		},
 		&models.Note{
-			ID:      2,
+			Id:      2,
 			Title:   "Second Note",
 			Content: "This is the second note",
 		},
 		&models.Note{
-			ID:      3,
+			Id:      3,
 			Title:   "Third Note",
 			Content: "This is the third note",
 		},
@@ -113,7 +113,7 @@ func TestNoteRepository_GetAllNotes(t *testing.T) {
 
 	rows := sqlmock.NewRows([]string{"id", "title", "content"})
 	for _, note := range notes {
-		rows.AddRow(note.ID, note.Title, note.Content)
+		rows.AddRow(note.Id, note.Title, note.Content)
 	}
 
 	mock.ExpectQuery("SELECT id, title, content FROM notes").WillReturnRows(rows)
@@ -129,7 +129,7 @@ func TestNoteRepository_GetAllNotes(t *testing.T) {
 	}
 }
 
-func TestNoteRepository_UpdateNoteByID(t *testing.T) {
+func TestNoteRepository_UpdateNoteById(t *testing.T) {
 	// Arrange
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -138,23 +138,23 @@ func TestNoteRepository_UpdateNoteByID(t *testing.T) {
 	defer db.Close()
 
 	note := &models.Note{
-		ID:      1,
+		Id:      1,
 		Title:   "First Note",
 		Content: "This is the first note",
 	}
 
 	repo := NewNotesRepository(db)
 
-	mock.ExpectExec("UPDATE notes").WithArgs(note.Title, note.Content, note.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE notes").WithArgs(note.Title, note.Content, note.Id).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// Act
-	err = repo.Update(note.ID, note)
+	err = repo.Update(note.Id, note)
 
 	// Assert
 	assert.NoError(t, err)
 }
 
-func TestNoteRepository_DeleteNoteByID(t *testing.T) {
+func TestNoteRepository_DeleteNoteById(t *testing.T) {
 	// Arrange
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -163,17 +163,17 @@ func TestNoteRepository_DeleteNoteByID(t *testing.T) {
 	defer db.Close()
 
 	note := &models.Note{
-		ID:      1,
+		Id:      1,
 		Title:   "First Note",
 		Content: "This is the first note",
 	}
 
 	repo := NewNotesRepository(db)
 
-	mock.ExpectExec("DELETE FROM notes").WithArgs(note.ID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("DELETE FROM notes").WithArgs(note.Id).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// Act
-	err = repo.Delete(note.ID)
+	err = repo.Delete(note.Id)
 
 	// Assert
 	assert.NoError(t, err)

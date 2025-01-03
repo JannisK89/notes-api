@@ -23,7 +23,7 @@ func TestNoteHandler_Get(t *testing.T) {
 	noteService := service.NewNoteService(noteRepoMock)
 	noteHandler := NewNoteHandler(noteService)
 
-	note := &models.Note{ID: 1, Title: "Test Note", Content: "I Am A Test Note"}
+	note := &models.Note{Id: 1, Title: "Test Note", Content: "I Am A Test Note"}
 
 	noteRepoMock.On("Get", 1).Return(note, nil)
 
@@ -75,7 +75,7 @@ func TestNoteHandler_Update(t *testing.T) {
 	noteService := service.NewNoteService(noteRepoMock)
 	noteHandler := NewNoteHandler(noteService)
 
-	note := &models.Note{ID: 1, Title: "Test Note", Content: "I Am A Test Note"}
+	note := &models.Note{Id: 1, Title: "Test Note", Content: "I Am A Test Note"}
 	noteRepoMock.On("Update", 1, note).Return(nil)
 
 	payload, err := json.Marshal(note)
