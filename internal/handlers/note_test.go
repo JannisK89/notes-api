@@ -17,7 +17,7 @@ import (
 
 // TODO: Fix Service Mock
 // TODO: Add failure tests
-func TestNoteHandler_GetNote_Success(t *testing.T) {
+func TestNoteHandler_Get(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
 	noteService := service.NewNoteService(noteRepoMock)
@@ -25,32 +25,32 @@ func TestNoteHandler_GetNote_Success(t *testing.T) {
 
 	note := &models.Note{ID: 1, Title: "Test Note", Content: "I Am A Test Note"}
 
-	noteRepoMock.On("GetNoteByID", 1).Return(note, nil)
+	noteRepoMock.On("Get", 1).Return(note, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/notes/", nil)
 	rec := httptest.NewRecorder()
 
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("noteID", "1")
+	rctx.URLParams.Add("noteId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	// Act
-	noteHandler.GetNote(rec, req)
+	noteHandler.Get(rec, req)
 
 	// Assertion
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.JSONEq(t, `{"status": "success", "data": {"id":1,"title":"Test Note","content":"I Am A Test Note"} }`, rec.Body.String())
+	assert.JSONEq(t, `{"status": "ok", "data": {"id":1,"title":"Test Note","content":"I Am A Test Note"} }`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
 
-func TestNoteHandler_CreateNote_Success(t *testing.T) {
+func TestNoteHandler_Create(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
 	noteService := service.NewNoteService(noteRepoMock)
 	noteHandler := NewNoteHandler(noteService)
 
 	note := &models.Note{Title: "Test Note", Content: "I Am A Test Note"}
-	noteRepoMock.On("CreateNote", note).Return(1, nil)
+	noteRepoMock.On("Create", note).Return(1, nil)
 
 	payload, err := json.Marshal(note)
 	if err != nil {
@@ -61,22 +61,22 @@ func TestNoteHandler_CreateNote_Success(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Act
-	noteHandler.CreateNote(rec, req)
+	noteHandler.Create(rec, req)
 
 	// Assertion
 	assert.Equal(t, http.StatusCreated, rec.Code)
-	assert.JSONEq(t, `{"status": "success", "data": 1}`, rec.Body.String())
+	assert.JSONEq(t, `{"status": "ok", "data": 1}`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
 
-func TestNoteHandler_UpdateNote_Success(t *testing.T) {
+func TestNoteHandler_Update(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
 	noteService := service.NewNoteService(noteRepoMock)
 	noteHandler := NewNoteHandler(noteService)
 
 	note := &models.Note{ID: 1, Title: "Test Note", Content: "I Am A Test Note"}
-	noteRepoMock.On("UpdateNoteByID", 1, note).Return(nil)
+	noteRepoMock.On("Update", 1, note).Return(nil)
 
 	payload, err := json.Marshal(note)
 	if err != nil {
@@ -87,38 +87,38 @@ func TestNoteHandler_UpdateNote_Success(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("noteID", "1")
+	rctx.URLParams.Add("noteId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	// Act
-	noteHandler.UpdateNote(rec, req)
+	noteHandler.Update(rec, req)
 
 	// Assertion
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.JSONEq(t, `{"status": "success", "message": "Note Updated"}`, rec.Body.String())
+	assert.JSONEq(t, `{"status": "ok", "message": "Note Updated"}`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }
 
-func TestNoteHandler_DeleteNote_Success(t *testing.T) {
+func TestNoteHandler_Delete(t *testing.T) {
 	// Arrange
 	noteRepoMock := &mocks.NoteRepoMock{}
 	noteService := service.NewNoteService(noteRepoMock)
 	noteHandler := NewNoteHandler(noteService)
 
-	noteRepoMock.On("DeleteNoteByID", 1).Return(nil)
+	noteRepoMock.On("Delete", 1).Return(nil)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/v1/notes", nil)
 	rec := httptest.NewRecorder()
 
 	rctx := chi.NewRouteContext()
-	rctx.URLParams.Add("noteID", "1")
+	rctx.URLParams.Add("noteId", "1")
 	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
 
 	// Act
-	noteHandler.DeleteNote(rec, req)
+	noteHandler.Delete(rec, req)
 
 	// Assertion
-	assert.Equal(t, http.StatusNoContent, rec.Code)
-	assert.JSONEq(t, `{"status": "success"}`, rec.Body.String())
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.JSONEq(t, `{"status": "ok", "message": "Note Deleted"}`, rec.Body.String())
 	noteRepoMock.AssertExpectations(t)
 }

@@ -32,11 +32,11 @@ func main() {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/notes", func(r chi.Router) {
-			r.Get("/", notesHandler.GetAllNotes)
-			r.Post("/", notesHandler.CreateNote)
-			r.Get("/{noteID}", notesHandler.GetNote)
-			r.Put("/{noteID}", notesHandler.UpdateNote)
-			r.Delete("/{noteID}", notesHandler.DeleteNote)
+			r.Get("/", notesHandler.GetAll)
+			r.Post("/", notesHandler.Create)
+			r.Get("/{noteId}", notesHandler.Get)
+			r.Put("/{noteId}", notesHandler.Update)
+			r.Delete("/{noteId}", notesHandler.Delete)
 		})
 	})
 

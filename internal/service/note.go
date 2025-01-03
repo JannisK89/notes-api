@@ -9,18 +9,25 @@ import (
 )
 
 var (
-	ErrInvalidID   = errors.New("ID must be greater than 0")
+	ErrInvalidId   = errors.New("Id must be greater than 0")
 	ErrInvalidNote = errors.New("Note must have title and content")
 )
 
 type ServiceError struct {
 	Src string
-	ID  int
+	Id  int
 	Err error
 }
 
 func (e *ServiceError) Error() string {
-	return fmt.Sprintf("NoteService error in %s with id %v: %v", e.Src, e.ID, e.Err)
+	if e.Id == 0 {
+		return fmt.Sprintf("NoteService error in %s: %v", e.Src, e.Err)
+	}
+	return fmt.Sprintf("NoteService error in %s with id %v: %v", e.Src, e.Id, e.Err)
+}
+
+func (e *ServiceError) Unwrap() error {
+	return e.Err
 }
 
 type noteService struct {
@@ -31,38 +38,38 @@ func NewNoteService(repo repository.NoteRepository) *noteService {
 	return &noteService{repo}
 }
 
-func (s *noteService) GetNote(id int) (*models.Note, error) {
+func (s *noteService) Get(id int) (*models.Note, error) {
 	if id < 1 {
-		return nil, &ServiceError{"GetNote", id, ErrInvalidID}
+		return nil, &ServiceError{"GetNote", id, fmt.Errorf("%w: %v", ErrInvalidId, id)}
 	}
-	return s.repo.GetNoteByID(id)
+	return s.repo.Get(id)
 }
 
-func (s *noteService) CreateNote(note *models.Note) (int, error) {
+func (s *noteService) Create(note *models.Note) (int, error) {
 	if note == nil || note.Title == "" || note.Content == "" {
-		return 0, &ServiceError{"CreateNote", 0, ErrInvalidNote}
+		return 0, &ServiceError{Src: "CreateNote", Err: fmt.Errorf("%w: %v", ErrInvalidNote, note)}
 	}
-	return s.repo.CreateNote(note)
+	return s.repo.Create(note)
 }
 
-func (s *noteService) GetAllNotes() ([]*models.Note, error) {
-	return s.repo.GetAllNotes()
+func (s *noteService) GetAll() ([]*models.Note, error) {
+	return s.repo.GetAll()
 }
 
-func (s *noteService) UpdateNote(id int, note *models.Note) error {
+func (s *noteService) Update(id int, note *models.Note) error {
 	if id < 1 {
-		return &ServiceError{"GetNote", id, ErrInvalidID}
+		return &ServiceError{"GetNote", id, fmt.Errorf("%w: %v", ErrInvalidId, id)}
 	}
 
 	if note == nil || note.Title == "" || note.Content == "" {
 		return &ServiceError{"CreateNote", 0, ErrInvalidNote}
 	}
-	return s.repo.UpdateNoteByID(id, note)
+	return s.repo.Update(id, note)
 }
 
-func (s *noteService) DeleteNote(id int) error {
+func (s *noteService) Delete(id int) error {
 	if id < 1 {
-		return &ServiceError{"GetNote", id, ErrInvalidID}
+		return &ServiceError{"GetNote", id, fmt.Errorf("%w: %v", ErrInvalidId, id)}
 	}
-	return s.repo.DeleteNoteByID(id)
+	return s.repo.Delete(id)
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,18 +15,13 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var (
-	statusSuccess = "success"
-	statusError   = "error"
-)
-
 var ErrInvalidID = errors.New("ID must be a valid integer")
 
 func getNoteId(r *http.Request) (int, error) {
-	noteId := chi.URLParam(r, "noteID")
+	noteId := chi.URLParam(r, "noteId")
 	noteIdAsInt, err := strconv.Atoi(noteId)
 	if err != nil {
-		return 0, ErrInvalidID
+		return 0, fmt.Errorf("%w: %v", ErrInvalidID, noteId)
 	}
 	return noteIdAsInt, nil
 }
@@ -38,68 +34,68 @@ func NewNoteHandler(noteService service.NoteService) *NoteHandler {
 	return &NoteHandler{noteService}
 }
 
-func (h NoteHandler) GetNote(w http.ResponseWriter, r *http.Request) {
+func (h NoteHandler) Get(w http.ResponseWriter, r *http.Request) {
 	noteId, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
-		utils.ErrorResponse(w, http.StatusBadRequest, err.Error())
+		utils.ErrorResponse(w, http.StatusBadRequest, ErrInvalidID.Error())
 		return
 	}
 
-	note, err := h.noteService.GetNote(noteId)
+	note, err := h.noteService.Get(noteId)
 	if err != nil {
 		log.Println(err)
-		if repoError, ok := err.(*repository.RepoError); ok && repoError.Err == repository.ErrNoteNotFound {
-			utils.ErrorResponse(w, http.StatusNotFound, repoError.Err.Error())
+		if errors.Is(err, repository.ErrNoteNotFound) {
+			utils.ErrorResponse(w, http.StatusNotFound, repository.ErrNoteNotFound.Error())
 			return
-		} else if serviceError, ok := err.(*service.ServiceError); ok {
-			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
+		} else if errors.Is(err, service.ErrInvalidId) {
+			utils.ErrorResponse(w, http.StatusBadRequest, service.ErrInvalidId.Error())
 			return
 
 		} else {
-			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+			utils.ErrorResponse(w, http.StatusInternalServerError, utils.InternalServerError)
 			return
 		}
 	}
-	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: statusSuccess, Data: note})
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: utils.StatusOk, Data: note})
 }
 
-func (h NoteHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
+func (h NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 	note := &models.Note{}
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
 		log.Println(err)
-		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Request")
+		utils.ErrorResponse(w, http.StatusBadRequest, utils.BadRequest)
 		return
 	}
 
-	id, err := h.noteService.CreateNote(note)
+	id, err := h.noteService.Create(note)
 	if err != nil {
 		log.Println(err)
-		if serviceError, ok := err.(*service.ServiceError); ok {
-			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
+		if errors.Is(err, service.ErrInvalidNote) {
+			utils.ErrorResponse(w, http.StatusBadRequest, service.ErrInvalidNote.Error())
 			return
 		} else {
-			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+			utils.ErrorResponse(w, http.StatusInternalServerError, utils.InternalServerError)
 			return
 		}
 	}
-	utils.JSONResponse(w, http.StatusCreated, utils.ApiResponse{Status: statusSuccess, Data: id})
+	utils.JSONResponse(w, http.StatusCreated, utils.ApiResponse{Status: utils.StatusOk, Data: id})
 }
 
-func (h NoteHandler) GetAllNotes(w http.ResponseWriter, r *http.Request) {
-	notes, err := h.noteService.GetAllNotes()
+func (h NoteHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	notes, err := h.noteService.GetAll()
 	if err != nil {
 		log.Println(err)
-		utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		utils.ErrorResponse(w, http.StatusInternalServerError, utils.InternalServerError)
 		return
 	}
 
-	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: statusSuccess, Data: notes})
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: utils.StatusOk, Data: notes})
 }
 
-func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
+func (h NoteHandler) Update(w http.ResponseWriter, r *http.Request) {
 	noteId, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
@@ -112,26 +108,29 @@ func (h NoteHandler) UpdateNote(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(note)
 	if err != nil {
 		log.Println(err)
-		utils.ErrorResponse(w, http.StatusBadRequest, "Invalid Data")
+		utils.ErrorResponse(w, http.StatusBadRequest, utils.BadRequest)
 		return
 	}
 
-	err = h.noteService.UpdateNote(noteId, note)
+	err = h.noteService.Update(noteId, note)
 	if err != nil {
 		log.Println(err)
-		if serviceError, ok := err.(*service.ServiceError); ok {
-			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
+		if errors.Is(err, service.ErrInvalidNote) {
+			utils.ErrorResponse(w, http.StatusBadRequest, service.ErrInvalidNote.Error())
+			return
+		} else if errors.Is(err, service.ErrInvalidId) {
+			utils.ErrorResponse(w, http.StatusBadRequest, service.ErrInvalidId.Error())
 			return
 		} else {
-			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
+			utils.ErrorResponse(w, http.StatusInternalServerError, utils.InternalServerError)
 			return
 		}
 	}
 
-	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Message: "Note Updated", Status: statusSuccess})
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Message: "Note Updated", Status: utils.StatusOk})
 }
 
-func (h NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
+func (h NoteHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	noteId, err := getNoteId(r)
 	if err != nil {
 		log.Println(err)
@@ -139,17 +138,16 @@ func (h NoteHandler) DeleteNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.noteService.DeleteNote(noteId)
+	err = h.noteService.Delete(noteId)
 	if err != nil {
 		log.Println(err)
-		if serviceError, ok := err.(*service.ServiceError); ok {
-			utils.ErrorResponse(w, http.StatusBadRequest, serviceError.Err.Error())
+		if errors.Is(err, service.ErrInvalidId) {
+			utils.ErrorResponse(w, http.StatusBadRequest, service.ErrInvalidId.Error())
 			return
 		} else {
 			utils.ErrorResponse(w, http.StatusInternalServerError, "Internal Server Error")
 			return
 		}
 	}
-	utils.JSONResponse(w, http.StatusNoContent, utils.ApiResponse{Status: statusSuccess})
-
+	utils.JSONResponse(w, http.StatusOK, utils.ApiResponse{Status: utils.StatusOk, Message: "Note Deleted"})
 }

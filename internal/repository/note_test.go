@@ -32,8 +32,8 @@ func TestNoteRepository_CreateNote(t *testing.T) {
 	mock.ExpectExec("INSERT INTO notes").WithArgs(secondNote.Title, secondNote.Content).WillReturnResult(sqlmock.NewResult(2, 1))
 
 	// Act
-	firstID, firstErr := repo.CreateNote(firstNote)
-	secondID, secondErr := repo.CreateNote(secondNote)
+	firstID, firstErr := repo.Create(firstNote)
+	secondID, secondErr := repo.Create(secondNote)
 
 	// Assert
 	assert.NoError(t, firstErr)
@@ -73,8 +73,8 @@ func TestNoteRepository_GetNoteByID(t *testing.T) {
 	mock.ExpectQuery("SELECT id, title, content FROM notes WHERE id = ?").WithArgs(notes[1].ID).WillReturnRows(rows)
 
 	// Act
-	firstResult, firstErr := repo.GetNoteByID(notes[0].ID)
-	secondResult, secondErr := repo.GetNoteByID(notes[1].ID)
+	firstResult, firstErr := repo.Get(notes[0].ID)
+	secondResult, secondErr := repo.Get(notes[1].ID)
 
 	// Assert
 	assert.NoError(t, firstErr)
@@ -119,7 +119,7 @@ func TestNoteRepository_GetAllNotes(t *testing.T) {
 	mock.ExpectQuery("SELECT id, title, content FROM notes").WillReturnRows(rows)
 
 	// Act
-	res, err := repo.GetAllNotes()
+	res, err := repo.GetAll()
 
 	// Assert
 	assert.NoError(t, err)
@@ -148,7 +148,7 @@ func TestNoteRepository_UpdateNoteByID(t *testing.T) {
 	mock.ExpectExec("UPDATE notes").WithArgs(note.Title, note.Content, note.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// Act
-	err = repo.UpdateNoteByID(note.ID, note)
+	err = repo.Update(note.ID, note)
 
 	// Assert
 	assert.NoError(t, err)
@@ -173,7 +173,7 @@ func TestNoteRepository_DeleteNoteByID(t *testing.T) {
 	mock.ExpectExec("DELETE FROM notes").WithArgs(note.ID).WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// Act
-	err = repo.DeleteNoteByID(note.ID)
+	err = repo.Delete(note.ID)
 
 	// Assert
 	assert.NoError(t, err)
